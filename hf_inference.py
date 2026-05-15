@@ -4,6 +4,12 @@ Uses the new unified endpoint: https://router.huggingface.co/v1
 """
 from openai import OpenAI
 from config import HF_TOKEN, HF_MODEL
+import traceback
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class HuggingFaceInference:
@@ -15,9 +21,9 @@ class HuggingFaceInference:
             api_key=HF_TOKEN
         )
         self.model = HF_MODEL
-        print(f"DEBUG: Initialized Inference Client")
-        print(f"DEBUG: Model: {self.model}")
-        print(f"DEBUG: Token provided: {bool(HF_TOKEN)}")
+        logger.info(f"DEBUG: Initialized Inference Client")
+        logger.info(f"DEBUG: Model: {self.model}")
+        logger.info(f"DEBUG: Token provided: {bool(HF_TOKEN)}")
     
     def text_generation(
         self,
@@ -37,8 +43,15 @@ class HuggingFaceInference:
         
         Returns:
             Generated text
+            
+        Raises:
+            Exception: Detailed error from HF API or connection issues
         """
         try:
+            logger.info(f"Sending request to HF API for model: {self.model}")
+            logger.info(f"Prompt length: {len(prompt)} characters")
+            logger.info(f"Parameters - max_tokens: {max_new_tokens}, temp: {temperature}, top_p: {top_p}")
+            
             completion = self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
@@ -46,10 +59,21 @@ class HuggingFaceInference:
                 temperature=temperature,
                 top_p=top_p,
             )
-            return completion.choices[0].message.content
+            
+            generated_text = completion.choices[0].message.content
+            logger.info(f"Successfully generated text of length: {len(generated_text)}")
+            return generated_text
+            
         except Exception as e:
-            print(f"Error generating text: {e}")
-            raise Exception(f"Failed to generate text: {str(e)}")
+            error_message = str(e)
+            error_type = type(e).__name__
+            
+            logger.error(f"HF API Error Type: {error_type}")
+            logger.error(f"HF API Error Message: {error_message}")
+            logger.error(f"Full Traceback:\n{traceback.format_exc()}")
+            
+            # Return detailed error info
+            raise Exception(f"HuggingFace API Error ({error_type}): {error_message}")
 
 
 # Create singleton instance
