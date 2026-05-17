@@ -49,3 +49,6 @@ htmlcov/
 
 # Logs
 *.log
+
+# Firebase service account key
+serviceAccountKey.json

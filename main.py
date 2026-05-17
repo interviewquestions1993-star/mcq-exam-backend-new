@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
 from hf_inference import hf_client
-from config import API_HOST, API_PORT
+from firebase_client import save_ai_response
+from config import API_HOST, API_PORT, HF_MODEL
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -154,6 +155,15 @@ async def generate_text(request: TextGenerationRequest) -> TextGenerationRespons
             temperature=request.temperature,
             top_p=request.top_p
         )
+
+        save_ai_response("ai_responses", {
+            "endpoint": "/generate",
+            "prompt": request.prompt,
+            "model": HF_MODEL,
+            "request": request.dict(),
+            "response": {"generated_text": generated_text},
+            "status": "success"
+        })
         
         return TextGenerationResponse(
             prompt=request.prompt,
@@ -261,12 +271,26 @@ Generate only valid JSON, no other text."""
                 )
                 questions.append(question)
             
-            return MCQGenerationResponse(
+            response = MCQGenerationResponse(
                 topic=request.topic,
                 num_questions=len(questions),
                 questions=questions,
                 status="success"
             )
+
+            save_ai_response("mcq_responses", {
+                "endpoint": "/api/mcq/generate",
+                "topic": request.topic,
+                "num_questions": request.num_questions,
+                "difficulty": request.difficulty,
+                "request": request.dict(),
+                "response": {
+                    "questions": [q.dict() for q in questions]
+                },
+                "status": "success"
+            })
+
+            return response
         
         except (json.JSONDecodeError, ValueError) as e:
             raise HTTPException(
