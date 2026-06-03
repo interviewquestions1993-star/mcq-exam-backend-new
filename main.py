@@ -302,6 +302,64 @@ Generate only valid JSON, no other text."""
         raise HTTPException(status_code=500, detail=f"MCQ generation failed: {str(e)}")
 
 
+class PersistedMCQResponse(BaseModel):
+    """Response model for fetching persisted MCQs"""
+    id: str
+    topic: str
+    num_questions: int
+    questions: List[MCQQuestion]
+    created_at: str
+    status: str
+
+
+@app.get("/api/mcq/persisted", response_model=List[PersistedMCQResponse])
+async def get_persisted_mcqs() -> List[PersistedMCQResponse]:
+    """
+    Fetch all persisted MCQ responses from Firestore
+    
+    Returns:
+        List of persisted MCQ records
+    
+    Raises:
+        HTTPException: If retrieval fails
+    """
+    try:
+        from firebase_client import get_firestore_client
+        client = get_firestore_client()
+        if client is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Firestore not enabled or unavailable"
+            )
+        
+        docs = client.collection("mcq_responses").stream()
+        
+        results = []
+        for doc in docs:
+            data = doc.to_dict()
+            # Ensure questions exist and are properly formatted
+            questions_data = data.get("response", {}).get("questions", [])
+            questions = [MCQQuestion(**q) if isinstance(q, dict) else q for q in questions_data]
+            
+            result = PersistedMCQResponse(
+                id=doc.id,
+                topic=data.get("topic", ""),
+                num_questions=data.get("num_questions", 0),
+                questions=questions,
+                created_at=data.get("created_at", ""),
+                status=data.get("status", "success")
+            )
+            results.append(result)
+        
+        return results
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch persisted MCQs: {str(e)}"
+        )
+
+
 # Error handlers
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
