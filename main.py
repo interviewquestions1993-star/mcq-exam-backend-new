@@ -19,7 +19,13 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:4200",
+        "http://127.0.0.1:4200",
+        "https://interviewquestions1993-star.github.io",
+        "https://ai-mcq-trainer.in",
+        "https://www.ai-mcq-trainer.in"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
