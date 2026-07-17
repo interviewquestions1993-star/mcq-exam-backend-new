@@ -11,6 +11,7 @@ load_dotenv()
 HF_TOKEN = os.getenv("HF_TOKEN", "")
 HF_MODEL = os.getenv("HF_MODEL", "deepseek-ai/DeepSeek-V4-Flash")
 HF_API_URL = "https://router.huggingface.co/v1"  # OpenAI-compatible endpoint
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
 
 # API configuration
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
